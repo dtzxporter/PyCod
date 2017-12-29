@@ -298,6 +298,10 @@ class XBlock(object):
         file.write(data)
 
     @staticmethod
+    def WriteCosmeticInfoBlock(file, cosmetic_count):
+        XBlock.WriteMetaInt32Block(file, 0x7836, cosmetic_count)
+
+    @staticmethod
     def WriteBoneIndexBlock(file, index):
         XBlock.WriteMetaInt16Block(file, 0xDD9A, index)
 
@@ -489,9 +493,15 @@ class XBinIO(object):
         def LoadBoneCount(file):
             self.bones = [None] * XBlock.LoadInt16Block(file)
 
+        def LoadCosmeticCount(file):
+            self.cosmetics = XBlock.LoadInt32Block(file)
+
         def LoadBoneInfo(file):
             index, parent, name = XBlock.LoadBoneBlock(file)
-            self.bones[index] = XModel.Bone(name, parent)
+            bone = XModel.Bone(name, parent)
+            if index >= (len(self.bones) - self.cosmetics):
+                bone.cosmetic = True
+            self.bones[index] = bone
 
         def LoadBoneIndex(file):
             index = XBlock.LoadInt16Block(file)
@@ -669,7 +679,7 @@ class XBinIO(object):
 
             # Model Specific
             0x76BA: ("Bone count block", LoadBoneCount),
-            0x7836: ("Cosmetic bone count block", XBlock.LoadInt32Block),
+            0x7836: ("Cosmetic bone count block", LoadCosmeticCount),
             0xF099: ("Bone block", LoadBoneInfo),  # friggin porter
             0xDD9A: ("Bone index block", LoadBoneIndex),
             0x9383: ("Vert / Bone offset block", LoadOffset),
@@ -778,6 +788,14 @@ class XBinIO(object):
             XBlock.WriteCommentBlock(file, header_message)
         XBlock.WriteModelBlock(file)
         XBlock.WriteVersionBlock(file, version)
+
+        cosmetic_count = 0
+        for bone in model.bones:
+            if bone.cosmetic:
+                cosmetic_count = cosmetic_count + 1
+
+        if cosmetic_count > 0:
+            XBlock.WriteCosmeticInfoBlock(file, cosmetic_count)
 
         XBlock.WriteBoneCountBlock(file, len(model.bones))
         for bone_index, bone in enumerate(model.bones):

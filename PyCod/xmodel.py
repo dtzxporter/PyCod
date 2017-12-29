@@ -66,7 +66,7 @@ def serialize_image_string(image_dict, extended_features=True):
 
 
 class Bone(object):
-    __slots__ = ('name', 'parent', 'offset', 'matrix', 'scale')
+    __slots__ = ('name', 'parent', 'offset', 'matrix', 'scale', 'cosmetic')
 
     def __init__(self, name, parent=-1):
         self.name = name
@@ -74,6 +74,7 @@ class Bone(object):
         self.offset = None
         self.matrix = [None] * 3
         self.scale = (1.0, 1.0, 1.0)
+        self.cosmetic = False
 
 
 class Vertex(object):
@@ -374,7 +375,7 @@ class Mesh(object):
 
 
 class Model(XBinIO, object):
-    __slots__ = ('version', 'name', 'bones', 'meshes', 'materials')
+    __slots__ = ('version', 'name', 'bones', 'cosmetics', 'meshes', 'materials')
     supported_versions = [5, 6, 7]
 
     def __init__(self, name='$model'):
@@ -384,6 +385,7 @@ class Model(XBinIO, object):
         self.bones = []
         self.meshes = []
         self.materials = []
+        self.cosmetics = 0
 
     def __load_header__(self, file):
         lines_read = 0
@@ -474,13 +476,18 @@ class Model(XBinIO, object):
             if len(line_split) == 0:
                 continue
 
-            if line_split[0] == "NUMBONES":
+            if line_split[0] == "NUMCOSMETICS":
+                self.cosmetics = int(line_split[1])
+            elif line_split[0] == "NUMBONES":
                 bone_count = int(line_split[1])
                 self.bones = [Bone(None)] * bone_count
             elif line_split[0] == "BONE":
                 index = int(line_split[1])
                 parent = int(line_split[2])
-                self.bones[index] = Bone(line_split[3].strip('"'), parent)
+                bone = Bone(line_split[3].strip('"'), parent)
+                if index >= (len(self.bones) - self.cosmetics):
+                    bone.cosmetic = True
+                self.bones[index] = bone
                 bones_read += 1
                 if bones_read == bone_count:
                     break
@@ -700,6 +707,14 @@ class Model(XBinIO, object):
         file.write("VERSION %d\n\n" % version)
 
         # Bone Hierarchy
+        cosmetic_count = 0
+        for bone in self.bones:
+            if bone.cosmetic:
+                cosmetic_count = cosmetic_count + 1
+
+        if cosmetic_count > 0:
+            file.write("NUMCOSMETICS %d\n" % cosmetic_count)
+
         file.write("NUMBONES %d\n" % len(self.bones))
         for bone_index, bone in enumerate(self.bones):
             file.write("BONE %d %d \"%s\"\n" %
