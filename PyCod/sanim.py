@@ -1,3 +1,5 @@
+# <pep8 compliant>
+
 import json
 import zipfile
 import struct
@@ -8,33 +10,39 @@ import struct
     -------------------
 '''
 
+
 class Frame(object):
     __slots__ = ('index', 'position', 'rotation')
 
-    def __init__(self, index = 0, position = (0, 0, 0), rotation = (0, 0, 0, 1)):
+    def __init__(self, index=0, position=(0, 0, 0), rotation=(0, 0, 0, 1)):
         self.index = index
         self.position = position
         self.rotation = rotation
 
+
 class Node(object):
     __slots__ = ('name', 'frames')
 
-    def __init__(self, name = None, frames = 0):
+    def __init__(self, name=None, frames=0):
         self.name = name
         self.frames = [None] * frames
+
 
 class Shot(object):
     __slots__ = ('name', 'start', 'end')
 
-    def __init__(self, name = None, start = 0, end = 360):
+    def __init__(self, name=None, start=0, end=360):
         self.name = name
         self.start = start
         self.end = end
 
-class Info(object):
-    __slots__ = ('argJson', 'computer', 'domain', 'ta_game_path', 'time', 'user')
 
-    def __init__(self, argJson = "{}", computer = "D3V-137", domain = "ATVI", ta_game_path = "c:\\", time = "", user = "d3v"):
+class Info(object):
+    __slots__ = ('argJson', 'computer', 'domain',
+                 'ta_game_path', 'time', 'user')
+
+    def __init__(self, argJson="{}", computer="D3V-137", domain="ATVI",
+                 ta_game_path="c:\\", time="", user="d3v"):
         self.argJson = argJson
         self.computer = computer
         self.domain = domain
@@ -42,10 +50,12 @@ class Info(object):
         self.time = time
         self.user = user
 
-class SiegeAnim(object):
-    __slots__ = ('frames', 'nodes', 'shots', 'playback_speed', 'speed', 'loop', 'info')
 
-    def __init__(self, frames = 0, nodes = 0, shots = 0):
+class SiegeAnim(object):
+    __slots__ = ('frames', 'nodes', 'shots',
+                 'playback_speed', 'speed', 'loop', 'info')
+
+    def __init__(self, frames=0, nodes=0, shots=0):
         self.frames = frames
         self.nodes = [None] * nodes
         self.shots = [None] * shots
@@ -59,16 +69,16 @@ class SiegeAnim(object):
         buffer_offset = 0
         for frame in range(self.frames):
             for node in self.nodes:
-                trans = struct.unpack_from("fff", data, offset = buffer_offset)
+                trans = struct.unpack_from("fff", data, offset=buffer_offset)
                 node.frames[frame] = Frame(frame, trans)
                 buffer_offset = buffer_offset + 12
-    
+
     def __load_rotations__(self, data):
         # Load raw rotations from the data buffer(4 floats, 4 bytes each)
         buffer_offset = 0
         for frame in range(self.frames):
             for node in self.nodes:
-                rot = struct.unpack_from("ffff", data, offset = buffer_offset)
+                rot = struct.unpack_from("ffff", data, offset=buffer_offset)
                 node.frames[frame].rotation = rot
                 buffer_offset = buffer_offset + 16
 
@@ -104,7 +114,8 @@ class SiegeAnim(object):
         if idx_parse["shots"] is not None:
             self.shots = [None] * len(idx_parse["shots"])
             for shot_index, shot in enumerate(idx_parse["shots"]):
-                self.shots[shot_index] = Shot(shot["name"], int(shot["start"]), int(shot["end"]))
+                self.shots[shot_index] = Shot(
+                    shot["name"], int(shot["start"]), int(shot["end"]))
 
         if idx_parse["data"] is not None:
             if idx_parse["data"]["data/positions"] is not None:
@@ -125,11 +136,13 @@ class SiegeAnim(object):
 
         for frame in range(self.frames):
             for node in self.nodes:
-                struct.pack_into("fff", data_buffer, data_offset, *node.frames[frame].position)
+                struct.pack_into("fff", data_buffer, data_offset,
+                                 *node.frames[frame].position)
                 data_offset = data_offset + 12
 
         # Inject the data/positions file
-        file.writestr("data/positions", buffer(data_buffer), compress_type=zipfile.ZIP_DEFLATED)
+        file.writestr("data/positions", buffer(data_buffer),
+                      compress_type=zipfile.ZIP_DEFLATED)
 
         # Return buffer size and stride
         return (data_length, byte_stride)
@@ -143,11 +156,13 @@ class SiegeAnim(object):
 
         for frame in range(self.frames):
             for node in self.nodes:
-                struct.pack_into("ffff", data_buffer, data_offset, *node.frames[frame].rotation)
+                struct.pack_into("ffff", data_buffer, data_offset,
+                                 *node.frames[frame].rotation)
                 data_offset = data_offset + 16
 
         # Inject the data/quaternions file
-        file.writestr("data/quaternions", buffer(data_buffer), compress_type=zipfile.ZIP_DEFLATED)
+        file.writestr("data/quaternions", buffer(data_buffer),
+                      compress_type=zipfile.ZIP_DEFLATED)
 
         # Return buffer size and stride
         return (data_length, byte_stride)
@@ -157,48 +172,51 @@ class SiegeAnim(object):
         idx_dict = {}
 
         idx_dict["animation"] = {
-            "frames" : str(self.frames),
-            "loop" : str(int(self.loop)),
-            "nodes" : str(len(self.nodes)),
-            "playbackSpeed" : str(self.playback_speed),
-            "speed" : str(self.speed)
+            "frames": str(self.frames),
+            "loop": str(int(self.loop)),
+            "nodes": str(len(self.nodes)),
+            "playbackSpeed": str(self.playback_speed),
+            "speed": str(self.speed)
         }
 
         idx_dict["info"] = {
-            "argJson" : self.info.argJson,
-            "computer" : self.info.computer,
-            "domain" : self.info.domain,
-            "ta_game_path" : self.info.ta_game_path,
-            "time" : self.info.time,
-            "user" : self.info.user
+            "argJson": self.info.argJson,
+            "computer": self.info.computer,
+            "domain": self.info.domain,
+            "ta_game_path": self.info.ta_game_path,
+            "time": self.info.time,
+            "user": self.info.user
         }
 
         idx_dict["nodes"] = [None] * len(self.nodes)
         for node_index, node in enumerate(self.nodes):
-            idx_dict["nodes"][node_index] = {"name" : node.name}
+            idx_dict["nodes"][node_index] = {"name": node.name}
 
         idx_dict["shots"] = [None] * len(self.shots)
         for shot_index, shot in enumerate(self.shots):
-            idx_dict["shots"][shot_index] = {"name" : shot.name, "end" : str(shot.end), "start" : str(shot.start)}
+            idx_dict["shots"][shot_index] = {
+                "name": shot.name,
+                "end": str(shot.end), "start": str(shot.start)}
 
         # Inject the position and rotations data
         pos_data = self.__write_positions__(file)
         rot_data = self.__write_rotations__(file)
-        
+
         # Apply the data block
         idx_dict["data"] = {
-            "data/positions" : {
-                "byteSize" : str(pos_data[0]),
-                "byteStride" : str(pos_data[1])
+            "data/positions": {
+                "byteSize": str(pos_data[0]),
+                "byteStride": str(pos_data[1])
             },
-            "data/quaternions" : {
-                "byteSize" : str(rot_data[0]),
-                "byteStride" : str(rot_data[1])
+            "data/quaternions": {
+                "byteSize": str(rot_data[0]),
+                "byteStride": str(rot_data[1])
             }
         }
 
         # Inject the index file
-        file.writestr("index.json", json.dumps(idx_dict), compress_type=zipfile.ZIP_DEFLATED)
+        file.writestr("index.json", json.dumps(idx_dict),
+                      compress_type=zipfile.ZIP_DEFLATED)
 
     def LoadFile(self, path):
         file = zipfile.ZipFile(path, "r")
