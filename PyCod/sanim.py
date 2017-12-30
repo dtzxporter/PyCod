@@ -1,5 +1,3 @@
-# <pep8 compliant>
-
 import json
 import zipfile
 import struct
