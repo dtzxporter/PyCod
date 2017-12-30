@@ -799,10 +799,10 @@ class XBinIO(object):
             if bone.cosmetic:
                 cosmetic_count = cosmetic_count + 1
 
+        XBlock.WriteBoneCountBlock(file, len(model.bones))
         if cosmetic_count > 0:
             XBlock.WriteCosmeticInfoBlock(file, cosmetic_count)
 
-        XBlock.WriteBoneCountBlock(file, len(model.bones))
         for bone_index, bone in enumerate(model.bones):
             XBlock.WriteBoneInfoBlock(file, bone_index, bone)
 

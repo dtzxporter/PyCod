@@ -711,11 +711,11 @@ class Model(XBinIO, object):
         for bone in self.bones:
             if bone.cosmetic:
                 cosmetic_count = cosmetic_count + 1
-
+        
+        file.write("NUMBONES %d\n" % len(self.bones))
         if cosmetic_count > 0:
             file.write("NUMCOSMETICS %d\n" % cosmetic_count)
 
-        file.write("NUMBONES %d\n" % len(self.bones))
         for bone_index, bone in enumerate(self.bones):
             file.write("BONE %d %d \"%s\"\n" %
                        (bone_index, bone.parent, bone.name))
