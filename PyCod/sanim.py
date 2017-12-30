@@ -45,10 +45,10 @@ class Info(object):
 class SiegeAnim(object):
     __slots__ = ('frames', 'nodes', 'shots', 'playback_speed', 'speed', 'loop', 'info')
 
-    def __init__(self):
-        self.frames = 0
-        self.nodes = []
-        self.shots = []
+    def __init__(self, frames = 0, nodes = 0, shots = 0):
+        self.frames = frames
+        self.nodes = [None] * nodes
+        self.shots = [None] * shots
         self.playback_speed = 1
         self.speed = 0
         self.loop = True
