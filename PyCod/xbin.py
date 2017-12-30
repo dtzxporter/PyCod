@@ -320,7 +320,7 @@ class XBlock(object):
 
     @staticmethod
     def WriteVertex16Index(file, vert_index):
-        XBlock.WriteMetaInt16Block(file, 0x8F03, vert_index)
+        XBlock.WriteMetaUInt16Block(file, 0x8F03, vert_index)
 
     @staticmethod
     def WriteVertex32Index(file, vert_index):
