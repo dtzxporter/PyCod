@@ -521,7 +521,7 @@ class XBinIO(object):
 
         def LoadBoneScale(file):
             data = XBlock.LoadVec3Block(file)
-            # state.active_bone.scale = data
+            state.active_thing.scale = data
 
         def LoadBoneMatrix(file):
             data = XBlock.LoadShortVec3Block(file)
