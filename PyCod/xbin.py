@@ -788,7 +788,6 @@ class XBinIO(object):
 
         real_file = open(filepath, "wb")
         file = BytesIO()
-        version = 7
         if header_message != '':
             XBlock.WriteCommentBlock(file, header_message)
         XBlock.WriteModelBlock(file)
