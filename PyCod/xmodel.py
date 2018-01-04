@@ -201,8 +201,7 @@ class Face(object):
                 vert_number += 1
 
                 if version == 5:
-                    vert.normal = tuple([float(v)
-                                         for v in line_split[2:5]])  # TODO
+                    vert.normal = tuple([float(v) for v in line_split[2:5]])
                     vert.uv = (float(line_split[5]), float(line_split[6]))
                     self.indices[vert_number] = vert
                     if vert_number == 2:
@@ -440,7 +439,12 @@ class Model(XBinIO, object):
                                float(line_split[2]),
                                float(line_split[3]))
                 state = 2
-            # SCALE ... is ignored as its always 1
+            elif state == 2 and line_split[0] == "SCALE":
+                # Scales are not required and not used anymore, so we share state 2
+                scale = (float(line_split[1]),
+                         float(line_split[2]),
+                         float(line_split[3]))
+                bone.scale = scale
             elif state == 2 and line_split[0] == "X":
                 x = (float(line_split[1]),
                      float(line_split[2]),
