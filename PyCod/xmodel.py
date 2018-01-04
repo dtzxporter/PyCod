@@ -375,7 +375,7 @@ class Mesh(object):
 
 
 class Model(XBinIO, object):
-    __slots__ = ('version', 'name', 'bones', 'cosmetics', 'meshes', 'materials')
+    __slots__ = ('version', 'name', 'bones', 'meshes', 'materials')
     supported_versions = [5, 6, 7]
 
     def __init__(self, name='$model'):
@@ -385,7 +385,6 @@ class Model(XBinIO, object):
         self.bones = []
         self.meshes = []
         self.materials = []
-        self.cosmetics = 0
 
     def __load_header__(self, file):
         lines_read = 0
@@ -468,6 +467,7 @@ class Model(XBinIO, object):
     def __load_bones__(self, file):
         lines_read = 0
         bone_count = 0
+        cosmetic_count = 0
         bones_read = 0
         for line in file:
             lines_read += 1
@@ -477,7 +477,7 @@ class Model(XBinIO, object):
                 continue
 
             if line_split[0] == "NUMCOSMETICS":
-                self.cosmetics = int(line_split[1])
+                cosmetic_count = int(line_split[1])
             elif line_split[0] == "NUMBONES":
                 bone_count = int(line_split[1])
                 self.bones = [Bone(None)] * bone_count
@@ -485,7 +485,7 @@ class Model(XBinIO, object):
                 index = int(line_split[1])
                 parent = int(line_split[2])
                 bone = Bone(line_split[3].strip('"'), parent)
-                if index >= (len(self.bones) - self.cosmetics):
+                if index >= (bone_count - cosmetic_count):
                     bone.cosmetic = True
                 self.bones[index] = bone
                 bones_read += 1
@@ -692,7 +692,6 @@ class Model(XBinIO, object):
 
         if strict:
             assert(len(self.materials < 256))
-            assert(len(self.objects < 256))
             assert(len(self.materials < 256))
             if version < 7:
                 assert(vert_count <= 0xFFFF)
@@ -716,8 +715,15 @@ class Model(XBinIO, object):
         if cosmetic_count > 0:
             file.write("NUMCOSMETICS %d\n" % cosmetic_count)
 
+        # Order: Normal bones, Cosmetic bones
         for bone_index, bone in enumerate(self.bones):
-            file.write("BONE %d %d \"%s\"\n" %
+            if not bone.cosmetic:
+                file.write("BONE %d %d \"%s\"\n" %
+                       (bone_index, bone.parent, bone.name))
+
+        for bone_index, bone in enumerate(self.bones):
+            if bone.cosmetic:
+                file.write("BONE %d %d \"%s\"\n" %
                        (bone_index, bone.parent, bone.name))
         file.write("\n")
 

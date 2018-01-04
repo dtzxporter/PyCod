@@ -803,8 +803,14 @@ class XBinIO(object):
         if cosmetic_count > 0:
             XBlock.WriteCosmeticInfoBlock(file, cosmetic_count)
 
+        # Order: Normal bones, Cosmetic bones
         for bone_index, bone in enumerate(model.bones):
-            XBlock.WriteBoneInfoBlock(file, bone_index, bone)
+            if not bone.cosmetic:
+                XBlock.WriteBoneInfoBlock(file, bone_index, bone)
+
+        for bone_index, bone in enumerate(model.bones):
+            if bone.cosmetic:
+                XBlock.WriteBoneInfoBlock(file, bone_index, bone)
 
         for bone_index, bone in enumerate(model.bones):
             XBlock.WriteBoneIndexBlock(file, bone_index)
