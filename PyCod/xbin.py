@@ -3,6 +3,7 @@ import os
 from io import BytesIO
 
 from . import _lz4 as lz4
+from .xmodel import deserialize_image_string
 
 LOG_BLOCKS = False
 LZ4_VERBOSE = False
@@ -170,7 +171,6 @@ class XBlock(object):
 
     @staticmethod
     def LoadMaterialBlock(file):
-        from .xmodel import deserialize_image_string
         start = file.tell() - 2
         data = file.read(2)
         name = XBlock.LoadString_Aligned(file)
@@ -297,8 +297,7 @@ class XBlock(object):
     @staticmethod
     def WriteBoneInfoBlock(file, bone_index, bone):
         name = __str2bytes__(bone.name)
-        name_size = len(name)
-        data = struct.pack('Hxxii%ds' % padded(name_size + 1), 0xF099,
+        data = struct.pack('Hxxii%ds' % padded(len(name) + 1), 0xF099,
                            bone_index, bone.parent, name)
         file.write(data)
 
@@ -465,6 +464,7 @@ class XBinIO(object):
         target_type = 'ANIM' or 'MODEL'
         '''
 
+        # Ensure that these modules can inherit from us by delay loading
         from . import xmodel as XModel
         from . import xanim as XAnim
 
@@ -557,7 +557,6 @@ class XBinIO(object):
                 state.active_thing = face_vert
 
         def LoadVertexWeightCount(file):
-            # state.active_thing.weights = [None] * XBlock.LoadInt16Block(file)
             XBlock.LoadInt16Block(file)
             state.active_thing.weights = []
 
@@ -685,20 +684,20 @@ class XBinIO(object):
             # Model Specific
             0x76BA: ("Bone count block", LoadBoneCount),
             0x7836: ("Cosmetic bone count block", LoadCosmeticCount),
-            0xF099: ("Bone block", LoadBoneInfo),  # friggin porter
+            0xF099: ("Bone block", LoadBoneInfo),
             0xDD9A: ("Bone index block", LoadBoneIndex),
             0x9383: ("Vert / Bone offset block", LoadOffset),
             0x1C56: ("Bone scale block", LoadBoneScale),
             0xDCFD: ("Bone x matrix", LoadBoneMatrix),
             0xCCDC: ("Bone y matrix", LoadBoneMatrix),
-            0xFCBF: ("Bone z matrix", LoadBoneMatrix),  # 0x95D0 - friggin porter  # nopep8
+            0xFCBF: ("Bone z matrix", LoadBoneMatrix),
 
             0x950D: ("Number of verts", LoadVertexCount),
             0x2AEC: ("Number of verts32", LoadVertex32Count),
             0x8F03: ("Vert info block marker", LoadVertexIndex),
             0xB097: ("Vert32 info block marker", LoadVertex32Index),
             0xEA46: ("Vert weighted bones count", LoadVertexWeightCount),
-            0xF1AB: ("Vert bone weight info", LoadVertexWeight),  # friggin porter  # nopep8
+            0xF1AB: ("Vert bone weight info", LoadVertexWeight),
 
             0xBE92: ("Number of faces block", LoadTriCount),
             0x562F: ("Triangle info block", LoadTriInfo),
@@ -806,7 +805,7 @@ class XBinIO(object):
         for bone_index, bone in enumerate(model.bones):
             XBlock.WriteBoneIndexBlock(file, bone_index)
             XBlock.WriteOffsetBlock(file, bone.offset)
-            XBlock.WriteMetaVec3Block(file, 0x1C56, bone.scale)  # needed?
+            XBlock.WriteMetaVec3Block(file, 0x1C56, bone.scale)
             XBlock.WriteMatrixBlock(file, bone.matrix)
 
         # Used to offset the vertex indices for each mesh
