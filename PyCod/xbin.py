@@ -794,10 +794,7 @@ class XBinIO(object):
         XBlock.WriteModelBlock(file)
         XBlock.WriteVersionBlock(file, version)
 
-        cosmetic_count = 0
-        for bone in model.bones:
-            if bone.cosmetic:
-                cosmetic_count = cosmetic_count + 1
+        cosmetic_count = len([bone for bone in self.bones if bone.cosmetic])
 
         XBlock.WriteBoneCountBlock(file, len(model.bones))
         if cosmetic_count > 0:

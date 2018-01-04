@@ -705,10 +705,7 @@ class Model(XBinIO, object):
         file.write("VERSION %d\n\n" % version)
 
         # Bone Hierarchy
-        cosmetic_count = 0
-        for bone in self.bones:
-            if bone.cosmetic:
-                cosmetic_count = cosmetic_count + 1
+        cosmetic_count = len([bone for bone in self.bones if bone.cosmetic])
         
         file.write("NUMBONES %d\n" % len(self.bones))
         if cosmetic_count > 0:
