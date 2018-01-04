@@ -28,8 +28,8 @@ def __clamp_normal__(value):
 
 
 def __normalized__(iterable):
-    d = 1.0 / sqrt(sum([v * v for v in iterable]))
-    return [v * d for v in iterable]
+    dist = 1.0 / sqrt(sum([v * v for v in iterable]))
+    return [v * dist for v in iterable]
 
 
 def deserialize_image_string(ref_string):
