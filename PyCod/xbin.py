@@ -804,15 +804,23 @@ class XBinIO(object):
             XBlock.WriteCosmeticInfoBlock(file, cosmetic_count)
 
         # Order: Normal bones, Cosmetic bones
-        for bone_index, bone in enumerate(model.bones):
+        bone_remap = [None] * len(model.bones)
+        bone_ridx = 0
+
+        # Output and build hierarchy
+        for bone in model.bones:
             if not bone.cosmetic:
-                XBlock.WriteBoneInfoBlock(file, bone_index, bone)
+                XBlock.WriteBoneInfoBlock(file, bone_ridx, bone)
+                bone_remap[bone_ridx] = bone
+                bone_ridx = bone_ridx + 1
 
-        for bone_index, bone in enumerate(model.bones):
+        for bone in model.bones:
             if bone.cosmetic:
-                XBlock.WriteBoneInfoBlock(file, bone_index, bone)
+                XBlock.WriteBoneInfoBlock(file, bone_ridx, bone)
+                bone_remap[bone_ridx] = bone
+                bone_ridx = bone_ridx + 1
 
-        for bone_index, bone in enumerate(model.bones):
+        for bone_index, bone in enumerate(bone_remap):
             XBlock.WriteBoneIndexBlock(file, bone_index)
             XBlock.WriteOffsetBlock(file, bone.offset)
             XBlock.WriteMetaVec3Block(file, 0x1C56, bone.scale)  # needed?

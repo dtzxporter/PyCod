@@ -716,19 +716,27 @@ class Model(XBinIO, object):
             file.write("NUMCOSMETICS %d\n" % cosmetic_count)
 
         # Order: Normal bones, Cosmetic bones
-        for bone_index, bone in enumerate(self.bones):
+        bone_remap = [None] * len(self.bones)
+        bone_ridx = 0
+
+        # Output and build hierarchy
+        for bone in self.bones:
             if not bone.cosmetic:
                 file.write("BONE %d %d \"%s\"\n" %
-                       (bone_index, bone.parent, bone.name))
+                       (bone_ridx, bone.parent, bone.name))
+                bone_remap[bone_ridx] = bone
+                bone_ridx = bone_ridx + 1
 
-        for bone_index, bone in enumerate(self.bones):
+        for bone in self.bones:
             if bone.cosmetic:
                 file.write("BONE %d %d \"%s\"\n" %
-                       (bone_index, bone.parent, bone.name))
+                       (bone_ridx, bone.parent, bone.name))
+                bone_remap[bone_ridx] = bone
+                bone_ridx = bone_ridx + 1
         file.write("\n")
 
         # Bone Transform Data
-        for bone_index, bone in enumerate(self.bones):
+        for bone_index, bone in enumerate(bone_remap):
             file.write("BONE %d\n" % bone_index)
             file.write("OFFSET %f %f %f\n" %
                        (bone.offset[0], bone.offset[1], bone.offset[2]))
