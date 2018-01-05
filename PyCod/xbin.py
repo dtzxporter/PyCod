@@ -3,7 +3,6 @@ import os
 from io import BytesIO
 
 from . import _lz4 as lz4
-from .xmodel import deserialize_image_string
 
 LOG_BLOCKS = False
 LZ4_VERBOSE = False
@@ -178,6 +177,8 @@ class XBlock(object):
 
     @staticmethod
     def LoadMaterialBlock(file):
+        # Include after to allow xmodel object to serialize
+        from .xmodel import deserialize_image_string
         start = file.tell() - 2
         data = file.read(2)
         name = XBlock.LoadString_Aligned(file)
