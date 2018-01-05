@@ -3,6 +3,7 @@ import os
 from io import BytesIO
 
 from . import _lz4 as lz4
+from .xmodel import deserialize_image_string
 
 LOG_BLOCKS = False
 LZ4_VERBOSE = False
@@ -25,8 +26,8 @@ def padded(size):
     return (size + 0x3) & 0xFFFFFFFFFFFFFC
 
 
-def __clamp_float_to_short__(value, range=(-32768, 32767)):
-    return max(min(int(value * range[1]), range[1]), range[0])
+def __clamp_float_to_short__(value, clamp=(-32768, 32767)):
+    return max(min(int(value * clamp[1]), clamp[1]), clamp[0])
 
 
 def __str2bytes__(string):
@@ -147,6 +148,13 @@ class XBlock(object):
         return result
 
     @staticmethod
+    def LoadTriangle16Block(file):
+        file.seek(file.tell() + 2)
+        data = file.read(4)
+        result = struct.unpack('HH', data)
+        return result
+
+    @staticmethod
     def LoadColorBlock(file):
         file.seek(file.tell() + 2)
         data = file.read(4)
@@ -170,7 +178,6 @@ class XBlock(object):
 
     @staticmethod
     def LoadMaterialBlock(file):
-        from .xmodel import deserialize_image_string
         start = file.tell() - 2
         data = file.read(2)
         name = XBlock.LoadString_Aligned(file)
@@ -297,8 +304,7 @@ class XBlock(object):
     @staticmethod
     def WriteBoneInfoBlock(file, bone_index, bone):
         name = __str2bytes__(bone.name)
-        name_size = len(name)
-        data = struct.pack('Hxxii%ds' % padded(name_size + 1), 0xF099,
+        data = struct.pack('Hxxii%ds' % padded(len(name) + 1), 0xF099,
                            bone_index, bone.parent, name)
         file.write(data)
 
@@ -333,8 +339,13 @@ class XBlock(object):
 
     @staticmethod
     def WriteFaceInfoBlock(file, face):
-        data = struct.pack('HBB', 0x562F, face.mesh_id, face.material_id)
-        file.write(data)
+        # Check for over the byte limit
+        if face.mesh_id > 255 or face.material_id > 255:
+            data = struct.pack('HHHH', 0x6711, 0x0, face.mesh_id, face.material_id)
+            file.write(data)
+        else:
+            data = struct.pack('HBB', 0x562F, face.mesh_id, face.material_id)
+            file.write(data)
 
     @staticmethod
     def WriteFaceVertexNormalBlock(file, normal):
@@ -465,6 +476,7 @@ class XBinIO(object):
         target_type = 'ANIM' or 'MODEL'
         '''
 
+        # Ensure that these modules can inherit from us by delay loading
         from . import xmodel as XModel
         from . import xanim as XAnim
 
@@ -557,7 +569,6 @@ class XBinIO(object):
                 state.active_thing = face_vert
 
         def LoadVertexWeightCount(file):
-            # state.active_thing.weights = [None] * XBlock.LoadInt16Block(file)
             XBlock.LoadInt16Block(file)
             state.active_thing.weights = []
 
@@ -571,6 +582,13 @@ class XBinIO(object):
 
         def LoadTriInfo(file):
             object_index, material_index = XBlock.LoadTriangleBlock(file)
+            tri = XModel.Face(object_index, material_index)
+            tri.indices = []
+            dummy_mesh.faces.append(tri)
+            state.active_tri = tri
+
+        def LoadTri16Info(file):
+            object_index, material_index = XBlock.LoadTriangle16Block(file)
             tri = XModel.Face(object_index, material_index)
             tri.indices = []
             dummy_mesh.faces.append(tri)
@@ -685,23 +703,24 @@ class XBinIO(object):
             # Model Specific
             0x76BA: ("Bone count block", LoadBoneCount),
             0x7836: ("Cosmetic bone count block", LoadCosmeticCount),
-            0xF099: ("Bone block", LoadBoneInfo),  # friggin porter
+            0xF099: ("Bone block", LoadBoneInfo),
             0xDD9A: ("Bone index block", LoadBoneIndex),
             0x9383: ("Vert / Bone offset block", LoadOffset),
             0x1C56: ("Bone scale block", LoadBoneScale),
             0xDCFD: ("Bone x matrix", LoadBoneMatrix),
             0xCCDC: ("Bone y matrix", LoadBoneMatrix),
-            0xFCBF: ("Bone z matrix", LoadBoneMatrix),  # 0x95D0 - friggin porter  # nopep8
+            0xFCBF: ("Bone z matrix", LoadBoneMatrix),
 
             0x950D: ("Number of verts", LoadVertexCount),
             0x2AEC: ("Number of verts32", LoadVertex32Count),
             0x8F03: ("Vert info block marker", LoadVertexIndex),
             0xB097: ("Vert32 info block marker", LoadVertex32Index),
             0xEA46: ("Vert weighted bones count", LoadVertexWeightCount),
-            0xF1AB: ("Vert bone weight info", LoadVertexWeight),  # friggin porter  # nopep8
+            0xF1AB: ("Vert bone weight info", LoadVertexWeight),
 
             0xBE92: ("Number of faces block", LoadTriCount),
             0x562F: ("Triangle info block", LoadTriInfo),
+            0x6711: ("Triangle info (16) block", LoadTri16Info),
             0x89EC: ("Normal info", LoadTriVertNormal),
             0x6DD8: ("Color info", LoadTriVertColor),
             0x1AD4: ("UV info", LoadTriVertUV),
@@ -739,7 +758,6 @@ class XBinIO(object):
 
             # Misc (Unimplemented)
             0xBCD4: ("FIRSTFRAME", None),
-            0x6711: ("TRI16", None),
             0x1FC2: ("NUMSBONES", None),
             0xB35E: ("NUMSWEIGHTS", None),
             0xEF69: ("QUATERNION", None),
@@ -806,7 +824,7 @@ class XBinIO(object):
         for bone_index, bone in enumerate(model.bones):
             XBlock.WriteBoneIndexBlock(file, bone_index)
             XBlock.WriteOffsetBlock(file, bone.offset)
-            XBlock.WriteMetaVec3Block(file, 0x1C56, bone.scale)  # needed?
+            XBlock.WriteMetaVec3Block(file, 0x1C56, bone.scale)
             XBlock.WriteMatrixBlock(file, bone.matrix)
 
         # Used to offset the vertex indices for each mesh

@@ -1,8 +1,8 @@
 # Import modules
 import sys
 import os
-import pycod.xanim as XAnim
-import pycod.xmodel as XModel
+import PyCod.xanim as XAnim
+import PyCod.xmodel as XModel
 
 if len(sys.argv) <= 1:
     print("Error: No input file specified. example.py <xmodel.xmodel_export>")
