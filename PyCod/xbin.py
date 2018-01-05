@@ -148,6 +148,13 @@ class XBlock(object):
         return result
 
     @staticmethod
+    def LoadTriangle16Block(file):
+        file.seek(file.tell() + 2)
+        data = file.read(4)
+        result = struct.unpack('HH', data)
+        return result
+
+    @staticmethod
     def LoadColorBlock(file):
         file.seek(file.tell() + 2)
         data = file.read(4)
@@ -332,8 +339,13 @@ class XBlock(object):
 
     @staticmethod
     def WriteFaceInfoBlock(file, face):
-        data = struct.pack('HBB', 0x562F, face.mesh_id, face.material_id)
-        file.write(data)
+        # Check for over the byte limit
+        if face.mesh_id > 255 or face.material_id > 255:
+            data = struct.pack('HHHH', 0x6711, 0x0, face.mesh_id, face.material_id)
+            file.write(data)
+        else:
+            data = struct.pack('HBB', 0x562F, face.mesh_id, face.material_id)
+            file.write(data)
 
     @staticmethod
     def WriteFaceVertexNormalBlock(file, normal):
@@ -575,6 +587,13 @@ class XBinIO(object):
             dummy_mesh.faces.append(tri)
             state.active_tri = tri
 
+        def LoadTri16Info(file):
+            object_index, material_index = XBlock.LoadTriangle16Block(file)
+            tri = XModel.Face(object_index, material_index)
+            tri.indices = []
+            dummy_mesh.faces.append(tri)
+            state.active_tri = tri
+
         def LoadTriVertNormal(file):
             state.active_thing.normal = XBlock.LoadShortVec3Block(file)
 
@@ -701,6 +720,7 @@ class XBinIO(object):
 
             0xBE92: ("Number of faces block", LoadTriCount),
             0x562F: ("Triangle info block", LoadTriInfo),
+            0x6711: ("Triangle info (16) block", LoadTri16Info),
             0x89EC: ("Normal info", LoadTriVertNormal),
             0x6DD8: ("Color info", LoadTriVertColor),
             0x1AD4: ("UV info", LoadTriVertUV),
@@ -738,7 +758,6 @@ class XBinIO(object):
 
             # Misc (Unimplemented)
             0xBCD4: ("FIRSTFRAME", None),
-            0x6711: ("TRI16", None),
             0x1FC2: ("NUMSBONES", None),
             0xB35E: ("NUMSWEIGHTS", None),
             0xEF69: ("QUATERNION", None),

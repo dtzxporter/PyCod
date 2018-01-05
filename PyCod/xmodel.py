@@ -190,7 +190,8 @@ class Face(object):
                 if split[-1:] == ',':
                     line_split[i] = split.rstrip(",")
 
-            if state == 0 and line_split[0] == "TRI":
+            # Support blocks of byte, or ushort (TRI / TRI16)
+            if state == 0 and line_split[0].startswith("TRI"):
                 tri_number += 1
                 self.mesh_id = int(line_split[1])
                 self.material_id = int(line_split[2])
@@ -234,8 +235,11 @@ class Face(object):
         return lines_read
 
     def save(self, file, version, index_offset, vert_tok_suffix=""):
-        file.write("TRI %d %d %d %d\n" %
-                   (self.mesh_id, self.material_id, 0, 0))
+        # Check for blocks which go over the byte limit
+        if self.mesh_id > 255 or self.material_id > 255:
+            file.write("TRI16 %d %d %d %d\n" % (self.mesh_id, self.material_id, 0, 0))
+        else:
+            file.write("TRI %d %d %d %d\n" % (self.mesh_id, self.material_id, 0, 0))
         for i in range(3):
             self.indices[i].save(file, version, index_offset,
                                  vert_tok_suffix=vert_tok_suffix)
